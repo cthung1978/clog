@@ -6,10 +6,18 @@
 
 CLOG::CLOG()
 {
-	CLOG("");
+	string strempty;
+	strempty.clear();
+	init(strempty);
 }
 
 CLOG::CLOG(string _filename)
+{
+	init(_filename);
+}
+
+
+void CLOG::init(string _filename)
 {
 	int i, j;
 	struct clogMessage *clog_record;
@@ -42,16 +50,13 @@ CLOG::CLOG(string _filename)
 	logfile = NULL;
 	filename = _filename;
 	setFilename(filename);
-
 	stopThread = 0;
-	logThread = std::thread( &CLOG::logThreadFunc , this);
+	logThread = new std::thread( &CLOG::logThreadFunc , this);
 }
 
 CLOG::~CLOG()
 {
 	struct clogMessage *clog_record;
-
-	while (__sync_lock_test_and_set(&(writeLock), 1)) while (writeLock) {};
 
 	while(msgQueue.pop(clog_record))
 	{
@@ -66,11 +71,8 @@ CLOG::~CLOG()
 	if (logfile)
 		fclose(logfile);
 
-	stopThread = 1;
-	logThread.join();
+	logThread->join();
 	delete [] logLevelTags;
-
-	__sync_lock_release(&(writeLock));
 }
 
 void CLOG::setTimeTagFormat(const char *fmt)
@@ -99,7 +101,6 @@ void CLOG::setFilename(string _filename)
 
 	filename = _filename;
 	logfile = fopen(filename.c_str(), "at");
-
 }
 
 void CLOG::release()
@@ -130,7 +131,7 @@ string CLOG::getTimeTag()
 	return timeTag;
 }
 
-void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
+void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 {
 	va_list args;
 	char msg[CLOG_MAX_MSG_SIZE];
@@ -138,17 +139,16 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	string message;
 	struct clogMessage *msg_record;
 
-	if (logLevel < expectLogLevel)
+	if (logLevel < expectLogLevel || stopThread )
+	{
 		return;
-
-	while (__sync_lock_test_and_set(&(writeLock), 1)) while (writeLock) {};
+	}
 
 	va_start(args, msgFmt);
 	snprintf(msg, CLOG_MAX_MSG_SIZE, msgFmt, args);
 	va_end(args);
 
 	message = timeTag + logLevelTags[expectLogLevel] + msg + '\n';
-
 	msg_record = NULL;
 	if (!msgPool.pop(msg_record))
 	{
@@ -159,7 +159,6 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	strncpy(msg_record->msg, message.c_str(), CLOG_MAX_MSG_SIZE);
 	msgQueue.push(msg_record);
 
-	__sync_lock_release(&(writeLock));
 }
 
 void CLOG::logThreadFunc()

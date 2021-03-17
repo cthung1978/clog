@@ -32,11 +32,14 @@ class CLOG
 		CLOG();
 		CLOG(string filename);
 		~CLOG();
+
+		void init(string _filename);
 		void write(LOGLEVEL, const char *msgFmt, ...);
 		void setTimeTagFormat(const char *);
 		void setFilename(string);
 		void setAutoflush(bool);
 		void release();
+		volatile int writeLock;
 
 	private:
 		bool flagAutoFlush;
@@ -52,10 +55,9 @@ class CLOG
 		string getTimeTag();
 
 		int stopThread;
-		std::thread logThread;
+		std::thread *logThread;
 		void logThreadFunc();
 
-		volatile int writeLock;
 		// time and tag format
 
 };
