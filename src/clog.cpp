@@ -6,8 +6,13 @@
 
 CLOG::CLOG()
 {
+	CLOG("");
+}
+
+CLOG::CLOG(string _filename)
+{
 	int i, j;
-	
+	struct clogMessage *clog_record;
 
 	setTimeTagFormat("%H:%M:%S");
 
@@ -21,23 +26,42 @@ CLOG::CLOG()
 	{
 		logLevelTags[i] = "[DB" + to_string(i-2) + "] ";
 		for (j = 1; j <= i - 2; j++)
-			logLevelTags[i] = logLevelTags[i] + "\t";
+			logLevelTags[i] = logLevelTags[i] + "  ";
 	}
 
-	msgPool = new struct clogMessage [CLOG_MSG_POOL_SIZE];
 	for (i = 0; i < CLOG_MSG_POOL_SIZE; i++)
 	{
-		msgPool[i].inUse = false;
-		msgPool[i].msg[0] = '\0';
+		clog_record = new struct clogMessage;
+		clog_record->inUse = false;
+		clog_record->msg[0] = '\0';
+		msgPool.push(clog_record);
 	}
+
+	flagAutoFlush = false;
+
+	logfile = NULL;
+	filename = _filename;
+	setFilename(filename);
 
 	stopThread = 0;
 	logThread = std::thread( &CLOG::logThreadFunc , this);
-
 }
 
 CLOG::~CLOG()
 {
+	struct clogMessage *clog_record;
+
+	while(msgQueue.pop(clog_record))
+	{
+		delete clog_record;
+	}
+
+	while(msgPool.pop(clog_record))
+	{
+		delete clog_record;
+	}
+
+	fclose(logfile);
 
 	stopThread = 1;
 	logThread.join();
@@ -47,6 +71,30 @@ CLOG::~CLOG()
 void CLOG::setTimeTagFormat(const char *fmt)
 {
 	strncpy(timeTagFormat, fmt, 64);
+}
+
+void CLOG::setAutoflush(bool _flag)
+{
+	flagAutoFlush = _flag;
+}
+
+void CLOG::setFilename(string _filename)
+{
+	if (_filename.empty())
+	{
+		// do nothing
+		return;
+	}
+
+	if (logfile != NULL)
+	{
+		fclose(logfile);
+		logfile = NULL;
+	}
+
+	filename = _filename;
+	logfile = fopen(filename.c_str(), "at");
+
 }
 
 void CLOG::release()
@@ -72,7 +120,7 @@ string CLOG::getTimeTag()
 	rawtime = tv.tv_sec;
 	timeinfo = localtime(&rawtime);
 	strftime(buf1, 128, timeTagFormat, timeinfo);
-	snprintf(buf2, 128, "%s.%6ld ", buf1, microsec);
+	snprintf(buf2, 128, "%s.%06d ", buf1, microsec);
 	timeTag = string(buf2);
 	return timeTag;
 }
@@ -83,6 +131,7 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	char msg[CLOG_MAX_MSG_SIZE];
 	string timeTag = getTimeTag();
 	string message;
+	struct clogMessage *msg_record;
 
 	if (logLevel < expectLogLevel)
 		return;
@@ -92,18 +141,41 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	va_end(args);
 
 	message = timeTag + logLevelTags[expectLogLevel] + msg + '\n';
-	//msgPool.push(message);
+
+	msg_record = NULL;
+	if (!msgPool.pop(msg_record))
+	{
+		msg_record = new struct clogMessage;
+	}
+	msg_record->inUse = true;
+	msg_record->msg[0] = '\0';
+	strncpy(msg_record->msg, message.c_str(), CLOG_MAX_MSG_SIZE);
+	msgQueue.push(msg_record);
 
 }
 
 void CLOG::logThreadFunc()
 {
-	string message;
+	struct clogMessage *msg_record;
+
 	while(!stopThread)
-	{ 
-		//if(msgPool.pop(message))
+	{
+		if(msgQueue.pop(msg_record))
 		{
-			cout << message ;
+			if (logfile)
+			{
+				fprintf(logfile, "%s", msg_record->msg);
+				if (flagAutoFlush)
+				{
+					fflush(logfile);
+				}
+			} else
+			{
+				cout << msg_record->msg ;
+			}
+			msg_record->inUse = false;
+			msg_record->msg[0] = '\0';
+			msgPool.push(msg_record);
 			continue;
 		}
 		this_thread::sleep_for(std::chrono::seconds(1));

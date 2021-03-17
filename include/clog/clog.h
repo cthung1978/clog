@@ -8,12 +8,12 @@
 
 using namespace std;
 
-#define CLOG_MAX_MSG_SIZE 1024 
-#define CLOG_MSG_POOL_SIZE 4096 
+#define CLOG_MAX_MSG_SIZE 1024
+#define CLOG_MSG_POOL_SIZE 4096
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 struct clogMessage
 {
@@ -21,7 +21,7 @@ struct clogMessage
 	char msg[CLOG_MAX_MSG_SIZE];
 };
 
-typedef enum 
+typedef enum
 {
 	MSG, WAR, ERR, DB1, DB2, DB3, DB4, LOGLEVELCOUNT
 } LOGLEVEL;
@@ -34,18 +34,21 @@ class CLOG
 		~CLOG();
 		void write(LOGLEVEL, const char *msgFmt, ...);
 		void setTimeTagFormat(const char *);
+		void setFilename(string);
+		void setAutoflush(bool);
 		void release();
 
 	private:
-		int flagAutoFlush;
+		bool flagAutoFlush;
 		FILE *logfile;
+		string filename;
 		LOGLEVEL logLevel;
 		char timeTagFormat[64];
 		string *logLevelTags;
 
-		struct clogMessage *msgPool;
-		boost::lockfree::queue<char *> msgQueue;
-		
+		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE>> msgPool;
+		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE>> msgQueue;
+
 		string getTimeTag();
 
 		int stopThread;
@@ -53,7 +56,7 @@ class CLOG
 		void logThreadFunc();
 
 		// time and tag format
-		
+
 };
 
 
