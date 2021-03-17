@@ -61,7 +61,8 @@ CLOG::~CLOG()
 		delete clog_record;
 	}
 
-	fclose(logfile);
+	if (logfile)
+		fclose(logfile);
 
 	stopThread = 1;
 	logThread.join();
