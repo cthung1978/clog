@@ -55,6 +55,7 @@ class CLOG
 		std::thread logThread;
 		void logThreadFunc();
 
+		volatile int writeLock;
 		// time and tag format
 
 };

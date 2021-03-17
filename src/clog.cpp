@@ -15,7 +15,7 @@ CLOG::CLOG(string _filename)
 	struct clogMessage *clog_record;
 
 	setTimeTagFormat("%H:%M:%S");
-
+	writeLock = 0;
 	logLevel = DB4;
 	logLevelTags = new string[LOGLEVELCOUNT];
 	// i = 0, 1, 2 preserve for MSG WAR ERR
@@ -51,6 +51,8 @@ CLOG::~CLOG()
 {
 	struct clogMessage *clog_record;
 
+	while (__sync_lock_test_and_set(&(writeLock), 1)) while (writeLock) {};
+
 	while(msgQueue.pop(clog_record))
 	{
 		delete clog_record;
@@ -67,6 +69,8 @@ CLOG::~CLOG()
 	stopThread = 1;
 	logThread.join();
 	delete [] logLevelTags;
+
+	__sync_lock_release(&(writeLock));
 }
 
 void CLOG::setTimeTagFormat(const char *fmt)
@@ -137,6 +141,8 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	if (logLevel < expectLogLevel)
 		return;
 
+	while (__sync_lock_test_and_set(&(writeLock), 1)) while (writeLock) {};
+
 	va_start(args, msgFmt);
 	snprintf(msg, CLOG_MAX_MSG_SIZE, msgFmt, args);
 	va_end(args);
@@ -153,6 +159,7 @@ void CLOG::write (LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	strncpy(msg_record->msg, message.c_str(), CLOG_MAX_MSG_SIZE);
 	msgQueue.push(msg_record);
 
+	__sync_lock_release(&(writeLock));
 }
 
 void CLOG::logThreadFunc()
