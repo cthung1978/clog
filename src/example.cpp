@@ -2,7 +2,7 @@
 
 int main()
 {
-	CLOG clog("log.txt");
+	CLOG clog;
 
 	clog.setAutoflush(true);
 
@@ -13,7 +13,7 @@ int main()
 	clog.write(DB2, "test");
 	clog.write(DB3, "test");
 
-	// clog.release();
 	this_thread::sleep_for(std::chrono::seconds(10));
+	clog.release();
 	return 0;
 }

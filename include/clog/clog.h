@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <string>
 #include <thread>
+#include <iostream>
 #include <boost/lockfree/queue.hpp>
 
 using namespace std;
@@ -39,7 +40,6 @@ class CLOG
 		void setFilename(string);
 		void setAutoflush(bool);
 		void release();
-		volatile int writeLock;
 
 	private:
 		bool flagAutoFlush;
@@ -58,10 +58,10 @@ class CLOG
 		std::thread *logThread;
 		void logThreadFunc();
 
+		volatile int writeLock;
 		// time and tag format
 
 };
-
 
 #ifdef __cplusplus
 }
