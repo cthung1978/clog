@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project (clog)
 
+set(CMAKE_CXX_STANDARD 11)
+#set(CXX_STANDARD_REQUIRED)
+
 find_package(Boost 1.61.1 REQUIRED)
 if(Boost_FOUND)
     message ("boost found")
@@ -42,4 +45,3 @@ add_executable(clog_example src/example.cpp)
 
 target_link_libraries(clog_example PRIVATE clog::library)
 #target_link_libraries(clog_example PRIVATE clog::staticlibrary)
-

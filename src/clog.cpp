@@ -46,6 +46,7 @@ void CLOG::init(string _filename)
 	}
 
 	flagAutoFlush = false;
+	to_unlock(writeLock);
 
 	logfile = NULL;
 	filename = _filename;
@@ -93,14 +94,17 @@ void CLOG::setFilename(string _filename)
 		return;
 	}
 
+	to_lock(writeLock);
 	if (logfile != NULL)
 	{
+		write(WAR, "%s is already opened, closing...", filename.c_str());
 		fclose(logfile);
 		logfile = NULL;
 	}
 
 	filename = _filename;
 	logfile = fopen(filename.c_str(), "at");
+	to_unlock(writeLock);
 }
 
 void CLOG::release()
@@ -169,6 +173,7 @@ void CLOG::logThreadFunc()
 	{
 		if(msgQueue.pop(msg_record))
 		{
+			to_lock(writeLock);
 			if (logfile)
 			{
 				fprintf(logfile, "%s", msg_record->msg);
@@ -183,6 +188,7 @@ void CLOG::logThreadFunc()
 			msg_record->inUse = false;
 			msg_record->msg[0] = '\0';
 			msgPool.push(msg_record);
+			to_unlock(writeLock);
 			continue;
 		}
 		this_thread::sleep_for(std::chrono::seconds(1));

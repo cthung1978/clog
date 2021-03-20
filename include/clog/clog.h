@@ -12,6 +12,9 @@ using namespace std;
 #define CLOG_MAX_MSG_SIZE 1024
 #define CLOG_MSG_POOL_SIZE 4096
 
+#define to_lock(latch) while (__sync_lock_test_and_set(&(latch), 1)) while (latch)
+#define to_unlock(latch) __sync_lock_release(&(latch)) 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,8 +52,8 @@ class CLOG
 		char timeTagFormat[64];
 		string *logLevelTags;
 
-		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE>> msgPool;
-		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE>> msgQueue;
+		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE> > msgPool;
+		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE> > msgQueue;
 
 		string getTimeTag();
 
