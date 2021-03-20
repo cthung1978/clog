@@ -88,6 +88,7 @@ void CLOG::setAutoflush(bool _flag)
 
 void CLOG::setFilename(string _filename)
 {
+	char msg[CLOG_MAX_MSG_SIZE];
 	if (_filename.empty())
 	{
 		// do nothing
@@ -97,7 +98,8 @@ void CLOG::setFilename(string _filename)
 	to_lock(writeLock);
 	if (logfile != NULL)
 	{
-		write(WAR, "%s is already opened, closing...", filename.c_str());
+		sprintf(msg, "%s is already opened, closing...", filename.c_str());
+		write(WAR, msg);
 		fclose(logfile);
 		logfile = NULL;
 	}
