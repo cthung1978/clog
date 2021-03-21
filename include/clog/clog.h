@@ -13,7 +13,7 @@ using namespace std;
 #define CLOG_MSG_POOL_SIZE 4096
 
 #define to_lock(latch) while (__sync_lock_test_and_set(&(latch), 1)) while (latch)
-#define to_unlock(latch) __sync_lock_release(&(latch)) 
+#define to_unlock(latch) __sync_lock_release(&(latch))
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +44,10 @@ class CLOG
 		void setAutoflush(bool);
 		void release();
 
+		template<typename T> CLOG& operator<< (const T& data);
+		using endl_type = std::ostream&(std::ostream&);
+		CLOG& operator<<( endl_type endl);
+
 	private:
 		bool flagAutoFlush;
 		FILE *logfile;
@@ -63,6 +67,9 @@ class CLOG
 
 		volatile int writeLock;
 		// time and tag format
+
+		bool terminator;
+
 
 };
 

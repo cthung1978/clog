@@ -49,6 +49,7 @@ void CLOG::init(string _filename)
 	to_unlock(writeLock);
 
 	logfile = NULL;
+	terminator = false;
 	filename = _filename;
 	setFilename(filename);
 	stopThread = 0;
@@ -169,9 +170,13 @@ void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 
 void CLOG::logThreadFunc()
 {
+	bool runFlag;
 	struct clogMessage *msg_record;
+	struct timeval *timer, nowtime;
 
-	while(!stopThread)
+	timer = NULL;
+	runFlag = true;
+	while(runFlag)
 	{
 		if(msgQueue.pop(msg_record))
 		{
@@ -193,6 +198,40 @@ void CLOG::logThreadFunc()
 			to_unlock(writeLock);
 			continue;
 		}
+
+		if (stopThread)
+		{
+			if (timer == NULL)
+			{
+				timer = (struct timeval *) malloc(sizeof(struct timeval));
+				gettimeofday(timer, NULL);
+			}
+
+			gettimeofday(&nowtime, NULL);
+
+			// when the thread is called to stop, wait for 5 more secs incase the log messages have not write out complete
+			if(nowtime.tv_sec - timer->tv_sec > 5)
+			{
+				runFlag = false;
+			}
+		}
+
+		// not so buzy loop
 		this_thread::sleep_for(std::chrono::seconds(1));
 	}
+
+	if (timer)
+	{
+		free(timer);
+	}
+}
+
+template<typename T> CLOG& operator<< (const T& data)
+{
+
+}
+
+CLOG& CLOG::operator<<( endl_type endl)
+{
+
 }
