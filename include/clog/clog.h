@@ -15,10 +15,6 @@ using namespace std;
 #define to_lock(latch) while (__sync_lock_test_and_set(&(latch), 1)) while (latch)
 #define to_unlock(latch) __sync_lock_release(&(latch))
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct clogMessage
 {
 	bool inUse;
@@ -68,13 +64,10 @@ class CLOG
 		volatile int writeLock;
 		// time and tag format
 
+		std::ostream& _private_stream;
 		bool terminator;
 
 
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

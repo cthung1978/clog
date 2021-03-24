@@ -4,14 +4,14 @@
 #include <sys/time.h>
 #include "clog/clog.h"
 
-CLOG::CLOG()
+CLOG::CLOG():_private_stream(std::cout)
 {
 	string strempty;
 	strempty.clear();
 	init(strempty);
 }
 
-CLOG::CLOG(string _filename)
+CLOG::CLOG(string _filename):_private_stream(std::cout)
 {
 	init(_filename);
 }
@@ -226,12 +226,25 @@ void CLOG::logThreadFunc()
 	}
 }
 
-template<typename T> CLOG& operator<< (const T& data)
+template<typename T> CLOG& CLOG::operator<< (const T& data)
 {
+	if (terminator)
+	{
+		terminator = false;
+		_private_stream << '\n';
 
+	} else
+	{
+
+		_private_stream << data ;
+
+	}
+
+	return *this;
 }
 
 CLOG& CLOG::operator<<( endl_type endl)
 {
-
+	terminator = true;
+	return *this;
 }
