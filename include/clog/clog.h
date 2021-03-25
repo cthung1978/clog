@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
+#include <fstream>
 #include <boost/lockfree/queue.hpp>
 
 using namespace std;
@@ -45,8 +46,8 @@ class CLOG
 		CLOG& operator<<( endl_type endl);
 
 	private:
-		bool flagAutoFlush;
-		FILE *logfile;
+		bool flagAutoFlush;;
+		ofstream logStream;
 		string filename;
 		LOGLEVEL logLevel;
 		char timeTagFormat[64];
@@ -64,7 +65,6 @@ class CLOG
 		volatile int writeLock;
 		// time and tag format
 
-		std::ostream& _private_stream;
 		bool terminator;
 
 

@@ -4,14 +4,14 @@
 #include <sys/time.h>
 #include "clog/clog.h"
 
-CLOG::CLOG():_private_stream(std::cout)
+CLOG::CLOG()
 {
 	string strempty;
 	strempty.clear();
 	init(strempty);
 }
 
-CLOG::CLOG(string _filename):_private_stream(std::cout)
+CLOG::CLOG(string _filename)
 {
 	init(_filename);
 }
@@ -48,7 +48,7 @@ void CLOG::init(string _filename)
 	flagAutoFlush = false;
 	to_unlock(writeLock);
 
-	logfile = NULL;
+	// logfile = NULL;
 	terminator = false;
 	filename = _filename;
 	setFilename(filename);
@@ -70,11 +70,14 @@ CLOG::~CLOG()
 		delete clog_record;
 	}
 
-	if (logfile)
-		fclose(logfile);
+	if (logStream)
+		logStream.close();
 
 	logThread->join();
 	delete [] logLevelTags;
+
+	if(logStream)
+		logStream.close();
 }
 
 void CLOG::setTimeTagFormat(const char *fmt)
@@ -97,16 +100,17 @@ void CLOG::setFilename(string _filename)
 	}
 
 	to_lock(writeLock);
-	if (logfile != NULL)
+	if (logStream)
 	{
 		sprintf(msg, "%s is already opened, closing...", filename.c_str());
 		write(WAR, msg);
-		fclose(logfile);
-		logfile = NULL;
+		logStream.close();
 	}
-
-	filename = _filename;
-	logfile = fopen(filename.c_str(), "at");
+	logStream.open(filename);
+	if(logStream)
+	{
+		filename = _filename;
+	}
 	to_unlock(writeLock);
 }
 
@@ -181,17 +185,10 @@ void CLOG::logThreadFunc()
 		if(msgQueue.pop(msg_record))
 		{
 			to_lock(writeLock);
-			if (logfile)
-			{
-				fprintf(logfile, "%s", msg_record->msg);
-				if (flagAutoFlush)
-				{
-					fflush(logfile);
-				}
-			} else
-			{
-				cout << msg_record->msg ;
-			}
+			if (logStream)
+			 	logStream << msg_record ;
+			else
+				cout << msg_record;
 			msg_record->inUse = false;
 			msg_record->msg[0] = '\0';
 			msgPool.push(msg_record);
@@ -231,13 +228,13 @@ template<typename T> CLOG& CLOG::operator<< (const T& data)
 	if (terminator)
 	{
 		terminator = false;
-		_private_stream << '\n';
+		if (logStream) logStream << '\n' << data;
+		else cout << '\n' << data;
 
 	} else
 	{
-
-		_private_stream << data ;
-
+		if (logStream) logStream << data;
+		else cout << data;
 	}
 
 	return *this;
