@@ -4,14 +4,14 @@
 #include <sys/time.h>
 #include "clog/clog.h"
 
-CLOG::CLOG()
+CLOG::CLOG():logStream(NULL)
 {
 	string strempty;
 	strempty.clear();
 	init(strempty);
 }
 
-CLOG::CLOG(string _filename)
+CLOG::CLOG(string _filename):logStream(NULL)
 {
 	init(_filename);
 }
@@ -70,14 +70,11 @@ CLOG::~CLOG()
 		delete clog_record;
 	}
 
-	if (logStream)
-		logStream.close();
-
 	logThread->join();
 	delete [] logLevelTags;
 
-	if(logStream)
-		logStream.close();
+	if (logFileStream)
+		logFileStream.close();
 }
 
 void CLOG::setTimeTagFormat(const char *fmt)
@@ -100,16 +97,22 @@ void CLOG::setFilename(string _filename)
 	}
 
 	to_lock(writeLock);
-	if (logStream)
+	if (logFileStream.is_open())
 	{
 		sprintf(msg, "%s is already opened, closing...", filename.c_str());
 		write(WAR, msg);
-		logStream.close();
+		logFileStream.close();
 	}
-	logStream.open(filename);
-	if(logStream)
+	logFileStream.open(filename);
+	if(logFileStream.is_open())
 	{
 		filename = _filename;
+		fileStreamBuf = logFileStream.rdbuf();
+		logStream.rdbuf(fileStreamBuf);
+	} else
+	{
+		fileStreamBuf = cout.rdbuf();
+		logStream.rdbuf(fileStreamBuf);
 	}
 	to_unlock(writeLock);
 }
@@ -185,10 +188,7 @@ void CLOG::logThreadFunc()
 		if(msgQueue.pop(msg_record))
 		{
 			to_lock(writeLock);
-			if (logStream)
-			 	logStream << msg_record ;
-			else
-				cout << msg_record;
+			logStream << msg_record ;
 			msg_record->inUse = false;
 			msg_record->msg[0] = '\0';
 			msgPool.push(msg_record);
@@ -198,6 +198,7 @@ void CLOG::logThreadFunc()
 
 		if (stopThread)
 		{
+			*this << endl << " " << endl;
 			if (timer == NULL)
 			{
 				timer = (struct timeval *) malloc(sizeof(struct timeval));
@@ -223,22 +224,24 @@ void CLOG::logThreadFunc()
 	}
 }
 
-template<typename T> CLOG& CLOG::operator<< (const T& data)
-{
-	if (terminator)
-	{
-		terminator = false;
-		if (logStream) logStream << '\n' << data;
-		else cout << '\n' << data;
-
-	} else
-	{
-		if (logStream) logStream << data;
-		else cout << data;
-	}
-
-	return *this;
-}
+// template<typename T> CLOG& CLOG::operator<< (const T& data)
+// {
+// 	string timeTag;
+// 	string str;
+// 	if (terminator)
+// 	{
+// 		terminator = false;
+// 		ssBuffer << '\n';
+// 		ssBuffer >> str;
+// 		write(MSG, "%s", str.c_str());
+// 	} else
+// 	{
+// 		timeTag = getTimeTag() ;
+// 		ssBuffer << timeTag << data;
+// 	}
+//
+// 	return *this;
+// }
 
 CLOG& CLOG::operator<<( endl_type endl)
 {

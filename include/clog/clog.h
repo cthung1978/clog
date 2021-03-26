@@ -6,6 +6,7 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <boost/lockfree/queue.hpp>
 
 using namespace std;
@@ -40,19 +41,39 @@ class CLOG
 		void setFilename(string);
 		void setAutoflush(bool);
 		void release();
+		template<typename T> CLOG& operator<< (const T& data)
+		{
+			string timeTag;
+			string str;
+			if (terminator)
+			{
+				terminator = false;
+				ssBuffer << '\n';
+				ssBuffer >> str;
+				write(MSG, "%s", str.c_str());
+			} else
+			{
+				timeTag = getTimeTag() ;
+				ssBuffer << timeTag << data;
+			}
 
-		template<typename T> CLOG& operator<< (const T& data);
+			return *this;
+		};
+
 		using endl_type = std::ostream&(std::ostream&);
 		CLOG& operator<<( endl_type endl);
 
 	private:
-		bool flagAutoFlush;;
-		ofstream logStream;
+		bool flagAutoFlush;
+		ofstream logFileStream;
+		std::streambuf *fileStreamBuf;
+		stringstream ssBuffer;
+		ostream logStream;
+
 		string filename;
 		LOGLEVEL logLevel;
 		char timeTagFormat[64];
 		string *logLevelTags;
-
 		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE> > msgPool;
 		boost::lockfree::queue<struct clogMessage *, boost::lockfree::capacity<CLOG_MSG_POOL_SIZE> > msgQueue;
 

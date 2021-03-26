@@ -43,5 +43,5 @@ target_link_libraries (clog_static Threads::Threads)
 ############################################################
 add_executable(clog_example src/example.cpp)
 
-target_link_libraries(clog_example PRIVATE clog::library)
-#target_link_libraries(clog_example PRIVATE clog::staticlibrary)
+# target_link_libraries(clog_example PRIVATE clog::library)
+target_link_libraries(clog_example PRIVATE clog::staticlibrary)
