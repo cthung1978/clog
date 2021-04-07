@@ -16,6 +16,25 @@ CLOG::CLOG(string _filename):logStream(NULL)
 	init(_filename);
 }
 
+template<typename T>
+CLOG& CLOG::operator<< (const T& data)
+{
+	string timeTag;
+	string str;
+	if (terminator)
+	{
+		terminator = false;
+		ssBuffer << '\n';
+		ssBuffer >> str;
+		write(MSG, "%s", str.c_str());
+	} else
+	{
+		timeTag = getTimeTag() ;
+		ssBuffer << timeTag << data;
+	}
+
+	return *this;
+}
 
 void CLOG::init(string _filename)
 {
@@ -60,6 +79,13 @@ CLOG::~CLOG()
 {
 	struct clogMessage *clog_record;
 
+	// Tell the thread to stop
+	release();
+
+	// Sleep for a while and wait the thread to clean the msg queue
+	this_thread::sleep_for(std::chrono::milliseconds(200));
+	logThread->join();
+
 	while(msgQueue.pop(clog_record))
 	{
 		delete clog_record;
@@ -70,7 +96,6 @@ CLOG::~CLOG()
 		delete clog_record;
 	}
 
-	logThread->join();
 	delete [] logLevelTags;
 
 	if (logFileStream)
@@ -92,7 +117,8 @@ void CLOG::setFilename(string _filename)
 	char msg[CLOG_MAX_MSG_SIZE];
 	if (_filename.empty())
 	{
-		// do nothing
+		fileStreamBuf = cout.rdbuf();
+		logStream.rdbuf(fileStreamBuf);
 		return;
 	}
 
@@ -103,10 +129,11 @@ void CLOG::setFilename(string _filename)
 		write(WAR, msg);
 		logFileStream.close();
 	}
-	logFileStream.open(filename);
+
+	filename = _filename;
+	logFileStream.open(filename, std::ofstream::out | std::ofstream::app);
 	if(logFileStream.is_open())
 	{
-		filename = _filename;
 		fileStreamBuf = logFileStream.rdbuf();
 		logStream.rdbuf(fileStreamBuf);
 	} else
@@ -175,6 +202,7 @@ void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 
 }
 
+
 void CLOG::logThreadFunc()
 {
 	bool runFlag;
@@ -188,7 +216,8 @@ void CLOG::logThreadFunc()
 		if(msgQueue.pop(msg_record))
 		{
 			to_lock(writeLock);
-			logStream << msg_record ;
+			logStream << msg_record->msg;
+			if (flagAutoFlush) logStream.flush();
 			msg_record->inUse = false;
 			msg_record->msg[0] = '\0';
 			msgPool.push(msg_record);
@@ -199,23 +228,11 @@ void CLOG::logThreadFunc()
 		if (stopThread)
 		{
 			*this << endl << " " << endl;
-			if (timer == NULL)
-			{
-				timer = (struct timeval *) malloc(sizeof(struct timeval));
-				gettimeofday(timer, NULL);
-			}
-
-			gettimeofday(&nowtime, NULL);
-
-			// when the thread is called to stop, wait for 5 more secs incase the log messages have not write out complete
-			if(nowtime.tv_sec - timer->tv_sec > 5)
-			{
-				runFlag = false;
-			}
+			runFlag = false;
 		}
 
 		// not so buzy loop
-		this_thread::sleep_for(std::chrono::seconds(1));
+		this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 
 	if (timer)
@@ -223,25 +240,6 @@ void CLOG::logThreadFunc()
 		free(timer);
 	}
 }
-
-// template<typename T> CLOG& CLOG::operator<< (const T& data)
-// {
-// 	string timeTag;
-// 	string str;
-// 	if (terminator)
-// 	{
-// 		terminator = false;
-// 		ssBuffer << '\n';
-// 		ssBuffer >> str;
-// 		write(MSG, "%s", str.c_str());
-// 	} else
-// 	{
-// 		timeTag = getTimeTag() ;
-// 		ssBuffer << timeTag << data;
-// 	}
-//
-// 	return *this;
-// }
 
 CLOG& CLOG::operator<<( endl_type endl)
 {

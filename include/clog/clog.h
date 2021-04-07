@@ -41,24 +41,7 @@ class CLOG
 		void setFilename(string);
 		void setAutoflush(bool);
 		void release();
-		template<typename T> CLOG& operator<< (const T& data)
-		{
-			string timeTag;
-			string str;
-			if (terminator)
-			{
-				terminator = false;
-				ssBuffer << '\n';
-				ssBuffer >> str;
-				write(MSG, "%s", str.c_str());
-			} else
-			{
-				timeTag = getTimeTag() ;
-				ssBuffer << timeTag << data;
-			}
-
-			return *this;
-		};
+		template<typename T> CLOG& operator<< (const T& data);
 
 		using endl_type = std::ostream&(std::ostream&);
 		CLOG& operator<<( endl_type endl);
