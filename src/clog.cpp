@@ -16,26 +16,6 @@ CLOG::CLOG(string _filename):logStream(NULL)
 	init(_filename);
 }
 
-// template<typename T>
-// CLOG& CLOG::operator<< (const T& data)
-// {
-// 	string timeTag;
-// 	string str;
-// 	if (terminator)
-// 	{
-// 		terminator = false;
-// 		ssBuffer << '\n';
-// 		ssBuffer >> str;
-// 		write(MSG, "%s", str.c_str());
-// 	} else
-// 	{
-// 		timeTag = getTimeTag() ;
-// 		ssBuffer << timeTag << data;
-// 	}
-//
-// 	return *this;
-// }
-
 void CLOG::init(string _filename)
 {
 	int i, j;
@@ -67,9 +47,8 @@ void CLOG::init(string _filename)
 	flagAutoFlush = false;
 	to_unlock(writeLock);
 
-	// logfile = NULL;
-	terminator = false;
 	filename = _filename;
+	flag_newline = true;
 	setFilename(filename);
 	stopThread = 0;
 	logThread = new std::thread( &CLOG::logThreadFunc , this);
@@ -186,9 +165,9 @@ void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	}
 
 	va_start(args, msgFmt);
-	snprintf(msg, CLOG_MAX_MSG_SIZE, msgFmt, args);
+	vsnprintf(msg, CLOG_MAX_MSG_SIZE, msgFmt, args);
 	va_end(args);
-
+	cout << "msg " << msg << endl;
 	message = timeTag + logLevelTags[expectLogLevel] + msg + '\n';
 	msg_record = NULL;
 	if (!msgPool.pop(msg_record))
@@ -241,8 +220,13 @@ void CLOG::logThreadFunc()
 	}
 }
 
-CLOG& CLOG::operator<<( endl_type endl)
+CLOG& CLOG::operator<<( endl_type endl )
 {
-	terminator = true;
+	string str;
+	str.clear();
+	ssBuffer >> str;
+	cout << "strdump " << str << endl;
+	write(MSG, "%s", str.c_str());
+	flag_newline = true;
 	return *this;
 }

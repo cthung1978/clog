@@ -49,17 +49,7 @@ class CLOG
 		{
 			string timeTag;
 			string str;
-			if (terminator)
-			{
-				terminator = false;
-				ssBuffer << '\n';
-				ssBuffer >> str;
-				write(MSG, "%s", str.c_str());
-			} else
-			{
-				timeTag = getTimeTag() ;
-				ssBuffer << timeTag << data;
-			}
+			ssBuffer << data;
 			return *this;
 		};
 	private:
@@ -85,8 +75,7 @@ class CLOG
 		volatile int writeLock;
 		// time and tag format
 
-		bool terminator;
-
+		bool flag_newline;
 
 };
 

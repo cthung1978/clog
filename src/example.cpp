@@ -1,5 +1,5 @@
 #include "clog/clog.h"
-
+#include <cstring>
 int main()
 {
 	// CLOG clog("logfile.txt");
@@ -9,13 +9,11 @@ int main()
 	// clog.setTimeTagFormat("%H-%M-%S");
 	clog.setAutoflush(false);
 
-	clog.write(MSG, "test");
+	char s[10];
+	memcpy(s, "1122\0", 5);
+	clog.write(MSG, "test %s", s);
 	clog.write(WAR, "test");
 	clog.write(ERR, "test");
-
-	this_thread::sleep_for(std::chrono::seconds(3));
-	clog.setFilename("log.txt");
-	this_thread::sleep_for(std::chrono::seconds(3));
 
 	clog.write(DB1, "test");
 	clog.write(DB2, "test");
@@ -24,9 +22,7 @@ int main()
 	// clog << string("string message 1")  << endl;
 	// clog << string("string message 2")  << endl;
 	// clog << string("string message 3")  << endl;
-	clog << "hello" << endl;
-	clog << "hello" << endl;
-	clog << "hello" << endl;
+	clog << "helloc " << endl;
 
 	// this_thread::sleep_for(std::chrono::seconds(10));
 	return 0;
