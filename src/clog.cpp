@@ -225,7 +225,6 @@ CLOG& CLOG::operator<<( endl_type endl )
 	string str;
 	str.clear();
 	ssBuffer >> str;
-	cout << "strdump " << str << endl;
 	write(MSG, "%s", str.c_str());
 	flag_newline = true;
 	return *this;
