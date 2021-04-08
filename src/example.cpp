@@ -24,7 +24,9 @@ int main()
 	// clog << string("string message 1")  << endl;
 	// clog << string("string message 2")  << endl;
 	// clog << string("string message 3")  << endl;
-	// clog << endl << "hello" << endl;
+	clog << "hello" << endl;
+	clog << "hello" << endl;
+	clog << "hello" << endl;
 
 	// this_thread::sleep_for(std::chrono::seconds(10));
 	return 0;

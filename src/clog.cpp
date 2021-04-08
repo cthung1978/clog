@@ -16,25 +16,25 @@ CLOG::CLOG(string _filename):logStream(NULL)
 	init(_filename);
 }
 
-template<typename T>
-CLOG& CLOG::operator<< (const T& data)
-{
-	string timeTag;
-	string str;
-	if (terminator)
-	{
-		terminator = false;
-		ssBuffer << '\n';
-		ssBuffer >> str;
-		write(MSG, "%s", str.c_str());
-	} else
-	{
-		timeTag = getTimeTag() ;
-		ssBuffer << timeTag << data;
-	}
-
-	return *this;
-}
+// template<typename T>
+// CLOG& CLOG::operator<< (const T& data)
+// {
+// 	string timeTag;
+// 	string str;
+// 	if (terminator)
+// 	{
+// 		terminator = false;
+// 		ssBuffer << '\n';
+// 		ssBuffer >> str;
+// 		write(MSG, "%s", str.c_str());
+// 	} else
+// 	{
+// 		timeTag = getTimeTag() ;
+// 		ssBuffer << timeTag << data;
+// 	}
+//
+// 	return *this;
+// }
 
 void CLOG::init(string _filename)
 {
