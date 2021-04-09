@@ -43,15 +43,20 @@ class CLOG
 		void release();
 
 		using endl_type = std::ostream&(std::ostream&);
-		CLOG& operator<<( endl_type endl);
+		CLOG& operator<<( endl_type endl )
+		{
+			string str = ssBuffer.str();
+			write(MSG, "%s", str.c_str());
+			ssBuffer.str("");
+			ssBuffer.clear();
+			return *this;
+		}
 
 		template<typename T> CLOG& operator<< (const T& data)
 		{
-			string timeTag;
-			string str;
 			ssBuffer << data;
 			return *this;
-		};
+		}
 	private:
 		bool flagAutoFlush;
 		ofstream logFileStream;

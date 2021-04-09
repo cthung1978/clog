@@ -167,7 +167,6 @@ void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	va_start(args, msgFmt);
 	vsnprintf(msg, CLOG_MAX_MSG_SIZE, msgFmt, args);
 	va_end(args);
-	cout << "msg " << msg << endl;
 	message = timeTag + logLevelTags[expectLogLevel] + msg + '\n';
 	msg_record = NULL;
 	if (!msgPool.pop(msg_record))
@@ -178,7 +177,6 @@ void CLOG::write(LOGLEVEL expectLogLevel, const char *msgFmt, ...)
 	msg_record->msg[0] = '\0';
 	strncpy(msg_record->msg, message.c_str(), CLOG_MAX_MSG_SIZE);
 	msgQueue.push(msg_record);
-
 }
 
 
@@ -206,7 +204,6 @@ void CLOG::logThreadFunc()
 
 		if (stopThread)
 		{
-			*this << endl << " " << endl;
 			runFlag = false;
 		}
 
@@ -218,14 +215,4 @@ void CLOG::logThreadFunc()
 	{
 		free(timer);
 	}
-}
-
-CLOG& CLOG::operator<<( endl_type endl )
-{
-	string str;
-	str.clear();
-	ssBuffer >> str;
-	write(MSG, "%s", str.c_str());
-	flag_newline = true;
-	return *this;
 }
