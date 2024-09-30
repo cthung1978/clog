@@ -1,2 +1,2 @@
 # clog
-Concurrent logging
+Concurrent logging library for C/C++.
